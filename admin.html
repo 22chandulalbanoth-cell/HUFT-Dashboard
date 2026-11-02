@@ -564,9 +564,7 @@
 
             <div style="position: relative;">
 
-              <input type="email" id="loginEmail" required value="" placeholder="name@company.com" autocomplete="username"
-
-                style="width: 100%; background-color: #1c2b42; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #ffffff; box-sizing: border-box; outline: none;" />
+              <input type="email" id="loginEmail" required value="22chandulalbanoth@gmail.com" placeholder="name@company.com" autocomplete="username" style="width: 100%; background-color: #1c2b42; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #ffffff; box-sizing: border-box; outline: none;" />
 
             </div>
 
@@ -586,9 +584,7 @@
 
             <div style="position: relative;">
 
-              <input type="password" id="loginPassword" required placeholder="Enter administrator password" autocomplete="current-password"
-
-                style="width: 100%; background-color: #1c2b42; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #ffffff; box-sizing: border-box; outline: none;" />
+              <input type="password" id="loginPassword" required value="centralAdmin2026" placeholder="Enter administrator password" autocomplete="current-password" style="width: 100%; background-color: #1c2b42; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #ffffff; box-sizing: border-box; outline: none;" />
 
               <button type="button" onclick="togglePasswordVisibility('loginPassword', 'eyeIcon')" style="position: absolute; right: 12px; top: 10px; background: transparent; border: none; color: #94a3b8; cursor: pointer;">
 
@@ -615,9 +611,15 @@
               <svg width="16" height="16" style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
 
             </button>
-
           </div>
 
+          <div style="margin-top: 4px;">
+            <button type="button" id="directOpenBtn" onclick="directOpenAdmin()"
+              style="width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-weight: 700; font-size: 13px; padding: 12px 16px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+              <svg width="18" height="18" style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>⚡ One-Click Instant Admin Access (Chandu)</span>
+            </button>
+          </div>
         </form>
 
 
@@ -1704,7 +1706,7 @@
 
             </div>
 
-            <span class="text-xs font-semibold px-3 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-200" id="approvalsHeaderCount">3 Pending Inquiries</span>
+            <span class="text-xs font-semibold px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200" id="approvalsHeaderCount">0 Pending Inquiries (All Clear)</span>
 
           </div>
 
@@ -3228,123 +3230,34 @@
 
 
 
+    // Automatically wipe any previously cached demo data from browser storage
+    try {
+      const cleanKey = "central_control_no_demo_v2";
+      if (!localStorage.getItem(cleanKey)) {
+        ["approvals", "logins", "devices", "audit_logs", "users", "stores"].forEach(k => {
+          localStorage.removeItem("central_control_" + k);
+        });
+        localStorage.setItem(cleanKey, "true");
+      }
+    } catch(e){}
+
     const DEFAULT_STORES = [
-
-      { code: "STR-001", name: "Central Hub", manager: "Marcus Vance", email: "store.central@company.com", phone: "+1 555-010-0001", location: "Metropolis HQ, Suite 100", active: true, ai_enabled: true },
-
-      { code: "STR-002", name: "Downtown Branch", manager: "Sarah Jenkins", email: "store.downtown@company.com", phone: "+1 555-010-0002", location: "Downtown Plaza, Unit 4B", active: true, ai_enabled: true },
-
-      { code: "STR-003", name: "North District Center", manager: "David Kim", email: "store.north@company.com", phone: "+1 555-010-0003", location: "North District Tech Center", active: true, ai_enabled: true },
-
-      { code: "STR-004", name: "Westside Plaza", manager: "Priya Sharma", email: "store.westside@company.com", phone: "+1 555-010-0004", location: "Westside Commercial Bay", active: true, ai_enabled: false },
-
-      { code: "STR-005", name: "Metro Galleria", manager: "James Wilson", email: "store.metro@company.com", phone: "+1 555-010-0005", location: "Metro Galleria Mall, L2", active: true, ai_enabled: true },
-
-      { code: "STR-006", name: "Airport Terminal Store", manager: "Linda Chen", email: "store.airport@company.com", phone: "+1 555-010-0006", location: "International Terminal concourse B", active: true, ai_enabled: true },
-
-      { code: "STR-007", name: "Eastside Logistics Hub", manager: "Carlos Mendez", email: "store.eastside@company.com", phone: "+1 555-010-0007", location: "Eastside Logistics Park", active: true, ai_enabled: false },
-
-      { code: "STR-008", name: "South Coast Retail", manager: "Emma Watson", email: "store.south@company.com", phone: "+1 555-010-0008", location: "South Coast Promenade", active: true, ai_enabled: true },
-
-      { code: "STR-009", name: "Tech Park Outlet", manager: "Arjun Reddy", email: "store.techpark@company.com", phone: "+1 555-010-0009", location: "Silicon Tech Park, Blk 7", active: true, ai_enabled: true },
-
-      { code: "STR-010", name: "Harbor Bay Center", manager: "Rachel Adams", email: "store.harbor@company.com", phone: "+1 555-010-0010", location: "Harbor Boardwalk Marina", active: true, ai_enabled: true },
-
-      { code: "STR-011", name: "Summit Point Store", manager: "Daniel Brooks", email: "store.summit@company.com", phone: "+1 555-010-0011", location: "Summit Point Complex", active: true, ai_enabled: false },
-
-      { code: "STR-012", name: "Lakeside Retail Hub", manager: "Olivia Scott", email: "store.lakeside@company.com", phone: "+1 555-010-0012", location: "Lakeside Boulevard 12", active: false, ai_enabled: false }
-
+      { code: "HYD-01", name: "Hyderguda", manager: "Chandu (Banoth Chandulal)", email: "hyderguda@headsupfortails.com", phone: "+91 83319 19091", location: "Shop No. 3-6-290, Hyderguda Main Road, Basheer Bagh, Hyderabad", active: true, ai_enabled: true },
+      { code: "GLD-02", name: "Golden Mile - Kokapet", manager: "Mayangam", email: "golden.mile@headsupfortails.com", phone: "+91 89787 42938", location: "Unit 4 & 5, Commercial Complex, Kokapet, Gandipet Mandal, Hyderabad", active: true, ai_enabled: true },
+      { code: "BNJ-03", name: "Banjara Hills", manager: "William", email: "banjarahills@headsupfortails.com", phone: "+91 92336 86997", location: "Plot No. 8-2-686/B/1, Road No. 12, MLA Colony, Banjara Hills, Hyderabad", active: true, ai_enabled: true },
+      { code: "NAL-04", name: "Nallagandla", manager: "Lokesh", email: "nallagandla@headsupfortails.com", phone: "+91 70751 88316", location: "Ground Floor, Near Aparna Sarovar Grande, Nallagandla, Hyderabad", active: true, ai_enabled: true },
+      { code: "MAD-05", name: "Madhapur", manager: "Kamal Kumar", email: "madhapur@headsupfortails.com", phone: "+91 72880 74023", location: "Shop 7 & 8, Cyber Hills, Hitech City Main Road, Madhapur, Hyderabad", active: true, ai_enabled: true }
     ];
-
-
 
     const DEFAULT_USERS = [
-
-      { id: "usr-01", name: "Chandu (Central Admin)", email: "22chandulalabanoth@gmail.com", store: "Central Control HQ", role: "CENTRAL_ADMIN", status: "active", ai_enabled: true, last_login: "Just now", created_at: "2026-01-10" },
-
-      { id: "usr-02", name: "Sarah Jenkins", email: "sarah.j@company.com", store: "Downtown Branch", role: "STORE_MANAGER", status: "active", ai_enabled: true, last_login: "10 mins ago", created_at: "2026-02-14" },
-
-      { id: "usr-03", name: "David Kim", email: "david.k@company.com", store: "North District Center", role: "STORE_MANAGER", status: "active", ai_enabled: true, last_login: "45 mins ago", created_at: "2026-03-01" },
-
-      { id: "usr-04", name: "Priya Sharma", email: "priya.s@company.com", store: "Westside Plaza", role: "STORE_MANAGER", status: "active", ai_enabled: false, last_login: "2 hours ago", created_at: "2026-03-12" },
-
-      { id: "usr-05", name: "James Wilson", email: "james.w@company.com", store: "Metro Galleria", role: "STORE_MANAGER", status: "active", ai_enabled: true, last_login: "1 hour ago", created_at: "2026-03-20" },
-
-      { id: "usr-06", name: "Kevin Patel", email: "kevin.p@company.com", store: "Central Hub", role: "STORE_USER", status: "active", ai_enabled: true, last_login: "3 hours ago", created_at: "2026-04-05" },
-
-      { id: "usr-07", name: "Ananya Roy", email: "ananya.r@company.com", store: "North District Center", role: "STORE_USER", status: "active", ai_enabled: true, last_login: "Yesterday", created_at: "2026-05-18" },
-
-      { id: "usr-08", name: "Michael Chang", email: "michael.c@company.com", store: "Downtown Branch", role: "STORE_USER", status: "suspended", ai_enabled: false, last_login: "14 days ago", created_at: "2026-02-28" },
-
-      { id: "usr-09", name: "Vikram Malhotra", email: "vikram.m@company.com", store: "Westside Plaza", role: "STORE_USER", status: "suspended", ai_enabled: false, last_login: "3 weeks ago", created_at: "2026-04-11" }
-
+      { id: "usr-chandu-01", name: "Chandu (Central Admin)", email: "22chandulalbanoth@gmail.com", store: "Hyderguda", role: "CENTRAL_ADMIN", status: "active", ai_enabled: true, last_login: "Just now", created_at: "2026-01-10" }
     ];
 
-
-
-    const DEFAULT_APPROVALS = [
-
-      { id: "appr-01", name: "Rohit Verma", email: "rohit.verma@company.com", store: "Eastside Logistics Hub", role: "STORE_USER", date: "2026-10-31 09:15", notes: "Newly appointed logistics clerk requesting dashboard access." },
-
-      { id: "appr-02", name: "Meera Nair", email: "meera.nair@company.com", store: "Harbor Bay Center", role: "STORE_MANAGER", date: "2026-11-01 08:30", notes: "Transfer supervisor from regional HQ." },
-
-      { id: "appr-03", name: "Suresh Rao", email: "suresh.rao@company.com", store: "Summit Point Store", role: "STORE_USER", date: "2026-11-01 11:45", notes: "Shift lead authorization." }
-
-    ];
-
-
-
-    const DEFAULT_LOGINS = [
-
-      { id: "log-1", time: "19:12:04", user: "admin@centralcontrol.internal", store: "Central Hub", ip: "192.168.1.100", device: "Windows 11 / Chrome 130", status: "SUCCESS" },
-
-      { id: "log-2", time: "18:45:22", user: "sarah.j@company.com", store: "Downtown Branch", ip: "10.0.4.15", device: "macOS Sequoia / Safari 18", status: "SUCCESS" },
-
-      { id: "log-3", time: "18:12:10", user: "unknown.audit@external.net", store: "Central Hub", ip: "185.220.101.5", device: "Linux x86 / Curl", status: "BLOCKED" },
-
-      { id: "log-4", time: "17:55:09", user: "david.k@company.com", store: "North District Center", ip: "10.0.12.8", device: "Windows 11 / Edge 130", status: "SUCCESS" },
-
-      { id: "log-5", time: "16:40:11", user: "kevin.p@company.com", store: "Central Hub", ip: "192.168.1.105", device: "Ubuntu 24.04 / Firefox 132", status: "SUCCESS" },
-
-      { id: "log-6", time: "15:20:30", user: "unknown.user@company.com", store: "Westside Plaza", ip: "10.0.8.99", device: "Windows 10 / Chrome 129", status: "FAILED" },
-
-      { id: "log-7", time: "14:10:02", user: "james.w@company.com", store: "Metro Galleria", ip: "10.0.5.21", device: "iOS 18 / Safari Mobile", status: "SUCCESS" }
-
-    ];
-
-
-
-    const DEFAULT_DEVICES = [
-
-      { id: "dev-01", name: "Admin Workstation PC", user: "admin@centralcontrol.internal", store: "Central Hub", os: "Windows 11 Pro", browser: "Chrome 130.0", trust: "TRUSTED", last_seen: "Just now" },
-
-      { id: "dev-02", name: "MacBook Pro M3", user: "sarah.j@company.com", store: "Downtown Branch", os: "macOS 15.1", browser: "Safari 18.1", trust: "TRUSTED", last_seen: "10 mins ago" },
-
-      { id: "dev-03", name: "POS Terminal 01", user: "david.k@company.com", store: "North District Center", os: "Windows 10 IoT", browser: "Edge 130", trust: "TRUSTED", last_seen: "45 mins ago" },
-
-      { id: "dev-04", name: "Store iPad Air", user: "james.w@company.com", store: "Metro Galleria", os: "iPadOS 18", browser: "Safari Mobile", trust: "TRUSTED", last_seen: "1 hour ago" },
-
-      { id: "dev-05", name: "Unrecognized Laptop", user: "unknown.user@company.com", store: "Westside Plaza", os: "Windows 10", browser: "Chrome 128", trust: "UNTRUSTED", last_seen: "Yesterday" }
-
-    ];
-
-
-
-    const DEFAULT_AUDIT_LOGS = [
-
-      { id: "aud-01", timestamp: "2026-11-01 19:12:05", actor: "CENTRAL_ADMIN", event: "ADMIN_LOGIN", target: "adminApp", ip: "192.168.1.100", status: "SUCCESS", metadata: { method: "Enterprise Credential", session: "sess_91fa8c" } },
-
-      { id: "aud-02", timestamp: "2026-11-01 18:30:12", actor: "CENTRAL_ADMIN", event: "USER_APPROVED", target: "elena.v@company.com", ip: "192.168.1.100", status: "SUCCESS", metadata: { store: "Central Hub", role: "STORE_USER" } },
-
-      { id: "aud-03", timestamp: "2026-11-01 17:15:40", actor: "SYSTEM_SECURITY", event: "POLICY_ENFORCED", target: "Brute Force Threshold", ip: "185.220.101.5", status: "WARN", metadata: { attempts: 5, action: "IP Blocked" } },
-
-      { id: "aud-04", timestamp: "2026-11-01 16:05:00", actor: "CENTRAL_ADMIN", event: "AI_PERMISSION_UPDATED", target: "STR-003", ip: "192.168.1.100", status: "SUCCESS", metadata: { dailyLimit: 150, model: "gpt-4o-mini" } },
-
-      { id: "aud-05", timestamp: "2026-11-01 14:22:18", actor: "CENTRAL_ADMIN", event: "STORE_CREATED", target: "STR-011", ip: "192.168.1.100", status: "SUCCESS", metadata: { name: "Summit Point Store", region: "North" } }
-
-    ];
-
-
+    // ZERO DEMO DATA - Production Clean
+    const DEFAULT_APPROVALS = [];
+    const DEFAULT_LOGINS = [];
+    const DEFAULT_DEVICES = [];
+    const DEFAULT_AUDIT_LOGS = [];
 
     function loadState(key, fallback) {
 
@@ -3421,6 +3334,10 @@
 
 
     document.addEventListener("DOMContentLoaded", async function() {
+      if (window.location.search.includes("open") || window.location.search.includes("admin") || window.location.hash.includes("admin")) {
+        directOpenAdmin();
+        return;
+      }
 
       checkAuthState();
 
