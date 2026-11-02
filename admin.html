@@ -4122,7 +4122,52 @@ const TAB_TITLES = {
 
 
 
+    
+    function syncPendingApprovals() {
+      try {
+        const storeAccounts = JSON.parse(localStorage.getItem("huft_store_accounts") || "[]");
+        storeAccounts.forEach(sa => {
+          if (sa.status === "pending" || sa.status === "pending_approval") {
+            const email = (sa.email || "").toLowerCase().trim();
+            if (email && !approvals.some(a => a.email.toLowerCase() === email)) {
+              approvals.push({
+                id: sa.id || ("appr-" + Date.now()),
+                name: sa.full_name || (sa.store_id ? sa.store_id + " Manager" : "Store Manager"),
+                email: email,
+                store: sa.store_id || "Store",
+                role: "Store Manager",
+                date: sa.created_at ? sa.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+                notes: "Pending store registration request from Store Portal",
+                status: "pending"
+              });
+            }
+          }
+        });
+
+        const pendingEmail = (localStorage.getItem("huft_pending_req_email") || "").toLowerCase().trim();
+        const pendingStore = localStorage.getItem("huft_pending_req_store") || "Store";
+        if (pendingEmail && !approvals.some(a => a.email.toLowerCase() === pendingEmail)) {
+          const approvedEmails = JSON.parse(localStorage.getItem("huft_approved_emails") || "[]");
+          if (!approvedEmails.includes(pendingEmail)) {
+            approvals.push({
+              id: "appr-" + Date.now(),
+              name: pendingStore + " Manager",
+              email: pendingEmail,
+              store: pendingStore,
+              role: "Store Manager",
+              date: new Date().toISOString().split("T")[0],
+              notes: "Pending store registration request via Store Portal",
+              status: "pending"
+            });
+          }
+        }
+        saveState("approvals", approvals);
+      } catch(e) {}
+    }
+
+
     function renderApprovalsTable() {
+      syncPendingApprovals();
 
       const tbody = document.getElementById("approvalsTableBody");
 
@@ -4613,7 +4658,7 @@ const TAB_TITLES = {
       });
     }
 
-    function handleSetStorePassword(event) {
+        function handleSetStorePassword(event) {
       event.preventDefault();
       const code = document.getElementById("storePasswordCode").value;
       const store = stores.find(s => s.code === code);
@@ -4627,7 +4672,7 @@ const TAB_TITLES = {
         return;
       }
 
-      // Save to credentials registry in state / localStorage
+      // 1. Save to credentials registry
       let creds = loadState("store_credentials", {});
       creds[code] = {
         storeCode: code,
@@ -4638,14 +4683,71 @@ const TAB_TITLES = {
       };
       saveState("store_credentials", creds);
 
-      // Also persist to store passwords lookup for seamless authentication
+      // 2. Save to store passwords lookup
       let passMap = loadState("huft_store_passwords", {});
-      passMap[store.email.toLowerCase()] = newPassword;
+      const emailLower = store.email.toLowerCase().trim();
+      passMap[emailLower] = newPassword;
       if (code) passMap[code.toLowerCase()] = newPassword;
+
+      // Handle common store email variations (e.g. goldenmile <-> golden.mile)
+      if (emailLower.includes("golden.mile")) {
+        passMap["goldenmile@headsupfortails.com"] = newPassword;
+      } else if (emailLower.includes("goldenmile")) {
+        passMap["golden.mile@headsupfortails.com"] = newPassword;
+      }
       saveState("huft_store_passwords", passMap);
 
+      // Also persist to localStorage root so Store Portal directly accesses it
+      try {
+        localStorage.setItem("huft_store_passwords", JSON.stringify(passMap));
+        localStorage.setItem("central_control_huft_store_passwords", JSON.stringify(passMap));
+      } catch(e){}
+
+      // 3. AUTOMATIC APPROVAL UPON PASSWORD SETTING
+      try {
+        const approvedEmails = JSON.parse(localStorage.getItem("huft_approved_emails") || "[]");
+        const aliases = [emailLower, emailLower.replace(".", "")];
+        if (emailLower.includes("golden")) {
+          aliases.push("goldenmile@headsupfortails.com");
+          aliases.push("golden.mile@headsupfortails.com");
+        }
+        aliases.forEach(em => {
+          if (!approvedEmails.includes(em)) approvedEmails.push(em);
+        });
+        localStorage.setItem("huft_approved_emails", JSON.stringify(approvedEmails));
+
+        const storeAccounts = JSON.parse(localStorage.getItem("huft_store_accounts") || "[]");
+        let matchedAcct = storeAccounts.find(sa => aliases.includes((sa.email || "").toLowerCase().trim()) || sa.store_id === store.name);
+        if (matchedAcct) {
+          matchedAcct.status = "active";
+          matchedAcct.password = newPassword;
+        } else {
+          storeAccounts.push({
+            id: "store-" + code.toLowerCase(),
+            email: store.email,
+            store_id: store.name,
+            full_name: store.name + " Manager",
+            role: "store_manager",
+            status: "active",
+            password: newPassword,
+            created_at: new Date().toISOString(),
+            ai_access_enabled: true
+          });
+        }
+        localStorage.setItem("huft_store_accounts", JSON.stringify(storeAccounts));
+
+        // Clear from pending approvals list
+        approvals = approvals.filter(a => !aliases.includes(a.email.toLowerCase()));
+        saveState("approvals", approvals);
+
+        // Clear pending request status from local storage
+        localStorage.removeItem("huft_pending_req_email");
+        localStorage.removeItem("huft_pending_req_store");
+        localStorage.removeItem("huft_pending_req_time");
+      } catch (e) {}
+
       recordAuditEvent("STORE_PASSWORD_RESET", code, "SUCCESS", { store: store.name, email: store.email });
-      showToast("New password set successfully for " + store.name + " (" + code + ").", "success");
+      showToast("New password set successfully for " + store.name + " (" + code + ") & account activated immediately.", "success");
       closeModal("storePasswordModal");
       renderAllSections();
     }
@@ -4909,70 +5011,69 @@ const TAB_TITLES = {
 
 
 
-    function approveRegistration(approvalId) {
-
+        function approveRegistration(approvalId) {
       const req = approvals.find(a => a.id === approvalId);
-
       if (!req) return;
 
+      const email = req.email.toLowerCase().trim();
+      const emailAliases = [email];
+      if (email.includes(".")) emailAliases.push(email.replace(".", ""));
+      if (email.startsWith("goldenmile")) emailAliases.push("golden.mile@headsupfortails.com");
+      if (email.startsWith("golden.mile")) emailAliases.push("goldenmile@headsupfortails.com");
 
-
-      const newUser = {
-
-        id: "usr-" + String(users.length + 1).padStart(2, "0"),
-
-        name: req.name,
-
-        email: req.email,
-
-        store: req.store,
-
-        role: req.role,
-
-        status: "active",
-
-        ai_enabled: true,
-
-        last_login: "Just Approved",
-
-        created_at: new Date().toISOString().split("T")[0]
-
-      };
-
-      users.push(newUser);
-
-      saveState("users", users);
-
-
-
-      approvals = approvals.filter(a => a.id !== approvalId);
-
-      saveState("approvals", approvals);
-
-
-
+      // 1. Add to approved emails
       try {
-
         const approvedEmails = JSON.parse(localStorage.getItem("huft_approved_emails") || "[]");
-
-        if (!approvedEmails.includes(req.email.toLowerCase())) {
-
-          approvedEmails.push(req.email.toLowerCase());
-
-          localStorage.setItem("huft_approved_emails", JSON.stringify(approvedEmails));
-
-        }
-
+        emailAliases.forEach(em => {
+          if (!approvedEmails.includes(em)) approvedEmails.push(em);
+        });
+        localStorage.setItem("huft_approved_emails", JSON.stringify(approvedEmails));
       } catch (e) {}
 
+      // 2. Mark active in huft_store_accounts
+      try {
+        const storeAccounts = JSON.parse(localStorage.getItem("huft_store_accounts") || "[]");
+        storeAccounts.forEach(sa => {
+          if (emailAliases.includes((sa.email || "").toLowerCase().trim()) || sa.store_id === req.store) {
+            sa.status = "active";
+          }
+        });
+        localStorage.setItem("huft_store_accounts", JSON.stringify(storeAccounts));
+      } catch (e) {}
 
+      // 3. Clear pending request flags
+      try {
+        const pendingEmail = (localStorage.getItem("huft_pending_req_email") || "").toLowerCase().trim();
+        if (emailAliases.includes(pendingEmail)) {
+          localStorage.removeItem("huft_pending_req_email");
+          localStorage.removeItem("huft_pending_req_store");
+          localStorage.removeItem("huft_pending_req_time");
+        }
+      } catch (e) {}
+
+      // 4. Add to users table
+      const newUser = {
+        id: "usr-" + String(users.length + 1).padStart(2, "0"),
+        name: req.name,
+        email: req.email,
+        store: req.store,
+        role: req.role,
+        status: "active",
+        ai_enabled: true,
+        last_login: "Just Approved",
+        created_at: new Date().toISOString().split("T")[0]
+      };
+      if (!users.some(u => u.email.toLowerCase() === email)) {
+        users.push(newUser);
+        saveState("users", users);
+      }
+
+      approvals = approvals.filter(a => a.id !== approvalId);
+      saveState("approvals", approvals);
 
       recordAuditEvent("USER_APPROVED", req.email, "SUCCESS", { role: req.role, store: req.store });
-
       showToast("Approved registration for " + req.name + ". Account is active immediately.", "success");
-
       renderAllSections();
-
     }
 
 
