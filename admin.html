@@ -505,6 +505,21 @@
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+<script>
+  (function() {
+    try {
+      var s = localStorage.getItem("central_admin_session") || sessionStorage.getItem("central_admin_session");
+      if (s) {
+        var p = JSON.parse(s);
+        if (p && p.email) {
+          document.addEventListener("DOMContentLoaded", function() {
+            if (typeof directOpenAdmin === "function") directOpenAdmin();
+          });
+        }
+      }
+    } catch(e) {}
+  })();
+</script>
 
 
 
@@ -3476,70 +3491,14 @@
 
 
 
-        function checkAuthState() {
-
-      const loginView = document.getElementById("loginView");
-
-      const adminApp = document.getElementById("adminApp");
-
-
-
-      const session = currentAdminSession || 
-
-        JSON.parse(sessionStorage.getItem("central_admin_session") || "null") ||
-
-        JSON.parse(localStorage.getItem("central_admin_session") || "null");
-
-
-
-      if (session && session.role === "CENTRAL_ADMIN") {
-
+            function checkAuthState() {
+      const session = JSON.parse(sessionStorage.getItem("central_admin_session") || localStorage.getItem("central_admin_session") || "null");
+      if (session && isAuthorizedAdmin(session.email)) {
         currentAdminSession = session;
-
-        if (loginView) {
-
-          loginView.style.setProperty("display", "none", "important");
-
-          loginView.classList.add("hidden");
-
-        }
-
-        if (adminApp) {
-
-          adminApp.style.setProperty("display", "flex", "important");
-
-          adminApp.classList.remove("hidden");
-
-        }
-
-        const uEl = document.getElementById("adminUserName");
-
-        if (uEl) uEl.textContent = session.name || "Chandu (Central Admin)";
-
-        try { switchTab("sec-dashboard"); } catch(e){}
-
-        try { renderAllSections(); } catch(e){}
-
-      } else {
-
-        if (loginView) {
-
-          loginView.style.setProperty("display", "flex", "important");
-
-          loginView.classList.remove("hidden");
-
-        }
-
-        if (adminApp) {
-
-          adminApp.style.setProperty("display", "none", "important");
-
-          adminApp.classList.add("hidden");
-
-        }
-
+        directOpenAdmin();
+        return true;
       }
-
+      return false;
     }
 
 
