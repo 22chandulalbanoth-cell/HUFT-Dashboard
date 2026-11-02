@@ -4683,8 +4683,39 @@ button:hover, .btn:hover, .btn-auth-header:hover, .portal-btn-primary:hover,
   border-color: #ea580c !important;
 }
 </style>
+<style id="huft-session-stay-logged-in-css">
+body.huft-logged-in #huftPortalRoot {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.huft-logged-in #huftAppRoot {
+  display: block !important;
+  visibility: visible !important;
+}
+</style>
 </head>
 <body>
+<script>
+  (function() {
+    try {
+      var s = localStorage.getItem("huft_active_session") || sessionStorage.getItem("huft_active_session") || localStorage.getItem("huft_mock_session");
+      if (s) {
+        var p = JSON.parse(s);
+        if (p && p.email) {
+          document.documentElement.classList.add("huft-logged-in");
+          document.addEventListener("DOMContentLoaded", function() {
+            document.body.classList.add("huft-logged-in");
+            var pr = document.getElementById("huftPortalRoot");
+            if (pr) { pr.classList.add("portal-hidden"); pr.style.setProperty("display", "none", "important"); }
+            var ar = document.getElementById("huftAppRoot");
+            if (ar) { ar.style.setProperty("display", "block", "important"); }
+          });
+        }
+      }
+    } catch(e) {}
+  })();
+</script>
 
 
 
@@ -18298,41 +18329,35 @@ async function restoreAuthSession() {
     return null;
   }
 
-  // 2. Real Supabase Session
+  // 2. Real Supabase Session if active
   if (supabaseClient && !isDemoMode) {
-    const { data } = await supabaseClient.auth.getSession();
-    if (data && data.session) {
-      authSession = data.session;
-      try {
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      if (data && data.session) {
+        authSession = data.session;
         const profile = await fetchUserProfile(data.session.user.id);
         if (profile && profile.status === "active") {
           userProfile = profile;
+          localStorage.setItem("huft_active_session", JSON.stringify(profile));
           return userProfile;
         }
-      } catch (err) {
-        console.warn("Session restore failed:", err);
       }
-    }
+    } catch (err) {}
   }
 
-  // 3. Demo Session Restore
-  const savedDemo = localStorage.getItem("huft_mock_session");
-  if (savedDemo) {
+  // 3. Persistent Local Session Restore (Stay Logged In Across Tab Refreshes!)
+  const saved = localStorage.getItem("huft_active_session") || sessionStorage.getItem("huft_active_session") || localStorage.getItem("huft_mock_session");
+  if (saved) {
     try {
-      const parsed = JSON.parse(savedDemo);
-      const live = MOCK_STORE_ACCOUNTS.find(a => a.id === parsed.id || a.email.toLowerCase() === parsed.email?.toLowerCase()) || parsed;
-      if (live.status === "active") {
-        authSession = { access_token: "mock-jwt-" + live.id, user: { id: live.id, email: live.email } };
-        userProfile = live;
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.email) {
+        authSession = { access_token: "active-jwt-" + (parsed.id || Date.now()), user: { id: parsed.id || "store-user", email: parsed.email } };
+        userProfile = parsed;
+        window.userProfile = parsed;
         return userProfile;
       }
-    } catch (e) {
-      localStorage.removeItem("huft_mock_session");
-    }
+    } catch (e) {}
   }
-
-  // Mandatory Login Gate: Do not auto-login without user interaction
-  return null;
 
   return null;
 }
@@ -18342,15 +18367,25 @@ async function restoreAuthSession() {
 // ==============================================================================
 
 function showLoginModal() {
-  if (typeof window.portalSignOut === "function") {
-    window.portalSignOut();
-  } else {
-    const portal = document.getElementById("huftPortalRoot");
-    const app = document.getElementById("huftAppRoot");
-    if (app) app.style.display = "none";
-    if (portal) portal.classList.remove("portal-hidden");
-    document.body.classList.remove("huft-logged-in");
+  // Only display login portal if not already logged in
+  const saved = localStorage.getItem("huft_active_session") || sessionStorage.getItem("huft_active_session");
+  if (saved) {
+    try {
+      const p = JSON.parse(saved);
+      if (p && p.email) {
+        if (typeof unlockDashboardForUser === "function") unlockDashboardForUser(p);
+        return;
+      }
+    } catch(e){}
   }
+  const portal = document.getElementById("huftPortalRoot");
+  const app = document.getElementById("huftAppRoot");
+  if (app) app.style.display = "none";
+  if (portal) {
+    portal.classList.remove("portal-hidden");
+    portal.style.setProperty("display", "block", "important");
+  }
+  document.body.classList.remove("huft-logged-in");
 }
 
 function hideLoginModal() {
@@ -20899,13 +20934,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.unlockDashboardForUser = function(userProfile){
+    localStorage.setItem("huft_active_session", JSON.stringify(userProfile));
     sessionStorage.setItem("huft_active_session", JSON.stringify(userProfile));
     localStorage.setItem("huft_mock_session", JSON.stringify(userProfile));
     window.userProfile = userProfile;
 
     // Hide portal immediately
     const portal = document.getElementById("huftPortalRoot");
-    if(portal) portal.classList.add("portal-hidden");
+    if(portal) { portal.classList.add("portal-hidden"); portal.style.setProperty("display", "none", "important"); }
 
     document.body.classList.add("huft-logged-in");
     document.body.classList.remove("huft-initializing");
@@ -20913,7 +20949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Reveal Dashboard App
     const app = document.getElementById("huftAppRoot");
     if(app) {
-      app.style.display = "block";
+      app.style.setProperty("display", "block", "important");
     }
 
     // Set active store context
@@ -21188,7 +21224,7 @@ window.handlePortalSignIn = async function(e){
     if(rPass) rPass.value = "";
     if(rPassC) rPassC.value = "";
     getHuftStoreAccounts();
-    const saved = sessionStorage.getItem("huft_active_session") || localStorage.getItem("huft_mock_session");
+    const saved = localStorage.getItem("huft_active_session") || sessionStorage.getItem("huft_active_session") || localStorage.getItem("huft_mock_session");
     if(saved){
       try {
         const profile = JSON.parse(saved);
